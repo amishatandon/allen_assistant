@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:allen_assistant/secrets.dart';
 
 class OpenAIService {
+  List<Map<String, String>> messages = [];
   Future<String> isArtPromptAPI(String prompt) async {
     try {
       final res = await http.post(
@@ -42,8 +43,6 @@ class OpenAIService {
   }
 
   Future<String> chatGPTAPI(String prompt) async {
-    List<Map<String, String>> messages = []; // Initialize messages list locally
-
     try {
       final res = await http.post(
         Uri.parse('https://api.openai.com/v1/chat/completions'),
@@ -87,6 +86,40 @@ class OpenAIService {
   }
 
   Future<String> dallEAPI(String prompt) async {
-    return 'DALL-E';
+    try {
+      final res = await http.post(
+        Uri.parse('https://api.openai.com/v1/davinci/images'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $openAIAPIKey',
+        },
+        body: jsonEncode({
+          'prompt': prompt,
+          'n': 1,
+        }),
+      );
+
+      if (res.statusCode == 200) {
+        final responseJson = jsonDecode(res.body);
+        final imageUrl = responseJson['data'][0]['url'];
+        final content = imageUrl.trim();
+
+        messages.add({
+          'role': 'user',
+          'content': prompt,
+        });
+
+        messages.add({
+          'role': 'assistant',
+          'content': content,
+        });
+
+        return content;
+      }
+
+      return 'An internal error occurred';
+    } catch (e) {
+      return e.toString();
+    }
   }
 }
