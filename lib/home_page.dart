@@ -30,19 +30,33 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> startListening() async {
+    print('started');
     await speechToText.listen(onResult: onSpeechResult);
     setState(() {});
   }
 
   Future<void> stopListening() async {
+    print('stopped');
     await speechToText.stop();
+    print('stopped');
     setState(() {});
   }
 
   void onSpeechResult(SpeechRecognitionResult result) {
+    print(result);
     setState(() {
       lastWords = result.recognizedWords;
+      // print(lastWords);
     });
+    if (result.finalResult) {
+      print(lastWords);
+      getResult(lastWords);
+    }
+  }
+
+  void getResult(String prompt) async {
+    final speech = await openAIService.isArtPromptAPI(prompt);
+    print(speech);
   }
 
   @override
@@ -157,13 +171,14 @@ class _HomePageState extends State<HomePage> {
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Pallete.firstSuggestionBoxColor,
+        // onPressed: speechToText.isListening ? stopListening : startListening,
         onPressed: () async {
-          if (await speechToText.hasPermission && speechToText.isNotListening) {
-            await startListening();
-          } else if (speechToText.isListening) {
-            final speech = await openAIService.isArtPromptAPI(lastWords);
-            print(speech);
-            await stopListening();
+          if (await speechToText.hasPermission) {
+            if (speechToText.isListening) {
+              await stopListening();
+            } else {
+              await startListening();
+            }
           } else {
             initSpeechToText();
           }
